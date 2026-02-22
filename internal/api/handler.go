@@ -42,6 +42,10 @@ func RegisterRoutes(router *gin.Engine, storage storage.Storage, cacheBackend ca
 
 	// Thumbnails
 	router.GET("/thumbnails/*path", h.ServeThumbnail)
+
+	// Extended features
+	RegisterExtendedRoutes(router, storage, cacheBackend, cfg)
+	RegisterExtendedRoutes2(router, storage, cacheBackend, cfg)
 }
 
 func (h *Handler) CORSMiddleware() gin.HandlerFunc {
