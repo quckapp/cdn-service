@@ -35,6 +35,13 @@ func main() {
 	router := gin.Default()
 	api.RegisterRoutes(router, storageBackend, cacheBackend, cfg)
 
+	// TODO: promotion-gate requires SQL or MongoDB store
+	// Once cdn-service has a suitable database connection, initialize:
+	// promoStore := promotiongate.NewSQLStore(db, "")
+	// promoStore.Migrate(context.Background())
+	// promoHandler := promotiongate.NewHandler(promoStore, "cdn-service", os.Getenv("ENVIRONMENT"))
+	// promoHandler.RegisterRoutes(router.Group("/api/v1"))
+
 	port := cfg.Port
 	log.Printf("CDN service starting on port %s", port)
 	if err := router.Run(":" + port); err != nil {
