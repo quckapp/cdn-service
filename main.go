@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"log"
 	"os"
 
@@ -10,6 +12,8 @@ import (
 	"cdn-service/internal/storage"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+	promotiongate "github.com/quckapp/promotion-gate-go"
 )
 
 func main() {
@@ -34,6 +38,22 @@ func main() {
 
 	router := gin.Default()
 	api.RegisterRoutes(router, storageBackend, cacheBackend, cfg)
+
+	// Promotion gate (uses dedicated MySQL connection)
+	if promoDSN := os.Getenv("PROMOTION_DB_URL"); promoDSN != "" {
+		promoDB, err := sql.Open("mysql", promoDSN)
+		if err != nil {
+			log.Printf("Warning: Failed to connect promotion DB: %v", err)
+		} else {
+			promoStore := promotiongate.NewSQLStore(promoDB, "")
+			if err := promoStore.Migrate(context.Background()); err != nil {
+				log.Printf("Warning: Failed to migrate promotion tables: %v", err)
+			}
+			promoHandler := promotiongate.NewHandler(promoStore, "cdn-service", os.Getenv("ENVIRONMENT"))
+			promoHandler.RegisterRoutes(router.Group("/api/v1"))
+			log.Println("Promotion gate enabled")
+		}
+	}
 
 	port := cfg.Port
 	log.Printf("CDN service starting on port %s", port)
